@@ -1,0 +1,39 @@
+---
+name: Discovery submission
+about: Auto-created issue when the watcher finds a repository. Use this to triage and tag.
+description: Keep issues orderlt and readable.
+title: "[Discovery] {repo} — {short summary}"
+labels: ["discovery","triage-needed","perplexing"]
+assignees: []
+---
+
+**Repository URL**
+<!-- Paste the repository URL found by the watcher -->
+URL: {repo_url}
+
+**One-line summary**
+<!-- Short description / tagline from the discovered repo -->
+Summary: {short_description}
+
+**Why this looks high-quality**
+- README clarity / tutorial: {yes/no}
+- Examples / demos: {yes/no}
+- Tests / CI: {yes/no}
+- License present: {yes/no}
+
+**Suggested tags (edit as needed)**
+- Topics: pathfinding / steering / flocking / procedural / ai / physics
+- Language: python / cpp / javascript / csharp / c / typescript / lisp
+- Difficulty: beginner / intermediate / advanced
+
+**Suggested module**
+<!-- e.g., modules/pathfinding or leave blank if unsure -->
+Module: {suggested_module_or_blank}
+
+**Notable files / entry points**
+- {file1}
+- {file2}
+
+**Notes / quick excerpts**
+<!-- short notes the bot captured or that would help triage -->
+- {notes}
