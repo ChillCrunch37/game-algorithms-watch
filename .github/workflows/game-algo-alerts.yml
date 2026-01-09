@@ -1,0 +1,125 @@
+name: Game-algo Alerts
+
+on:
+  schedule:
+    - cron: '0 8 * * *' # daily at 01:00 UTC — change as needed
+  workflow_dispatch:     # manual trigger
+
+permissions:
+  issues: write
+  contents: write       # required to create/update state file
+
+env:
+  # EDIT THESE to customize:
+  QUERY: "game algorithms in:readme"  # main GitHub Search query (modify to target algorithms)
+  STARS: "20"                         # minimum stars threshold to consider (string)
+  DAYS: "1"                           # lookback window in days (created:> since DAYS)
+  RESULTS: "10"                       # maximum results to check per run
+  MENTION: "@ChillCrunch37"           # e.g. "@ChillCrunch37" or blank
+
+jobs:
+  search-and-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run search, create issue, persist state
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const queryTerms = process.env.QUERY;
+            const starsThreshold = parseInt(process.env.STARS || "0", 10);
+            const days = parseInt(process.env.DAYS || "1", 10);
+            const resultsLimit = parseInt(process.env.RESULTS || "10", 10);
+            const mention = process.env.MENTION || "";
+
+            const dayMs = 24 * 60 * 60 * 1000;
+            const sinceDate = new Date(Date.now() - days * dayMs).toISOString().slice(0,10); // YYYY-MM-DD
+
+            const searchQuery = `${queryTerms} created:>${sinceDate} stars:>${starsThreshold}`;
+            core.info(`Search query: ${searchQuery}`);
+
+            // Attempt to load previous state (list of reported repo IDs) from state/game-algo-state.json
+            const statePath = 'state/game-algo-state.json';
+            let prevIds = [];
+            let prevSha = null;
+            try {
+              const res = await github.rest.repos.getContent({
+                owner, repo, path: statePath,
+              });
+              const content = Buffer.from(res.data.content, 'base64').toString();
+              const parsed = JSON.parse(content);
+              prevIds = Array.isArray(parsed.reported) ? parsed.reported : [];
+              prevSha = res.data.sha;
+              core.info(`Loaded ${prevIds.length} previously reported IDs.`);
+            } catch (err) {
+              if (err.status === 404) {
+                core.info('No previous state file found — starting fresh.');
+                prevIds = [];
+              } else {
+                throw err;
+              }
+            }
+
+            // Run the search
+            const searchRes = await github.rest.search.repos({
+              q: searchQuery,
+              sort: 'stars',
+              order: 'desc',
+              per_page: resultsLimit,
+            });
+
+            const items = (searchRes.data.items || []).filter(it => {
+              // Ensure it meets the stars threshold (defensive)
+              return (it.stargazers_count || 0) >= starsThreshold;
+            });
+
+            // Filter out already reported items
+            const newItems = items.filter(it => !prevIds.includes(it.id));
+            core.info(`Found ${items.length} matching repos; ${newItems.length} new.`);
+
+            if (newItems.length === 0) {
+              core.info('No new repositories to report.');
+              return;
+            }
+
+            // Build issue body
+            let body = '';
+            if (mention) body += `${mention}\n\n`;
+            body += `Found ${newItems.length} new repositories matching \`${queryTerms}\` (created since ${sinceDate}, stars > ${starsThreshold}):\n\n`;
+            for (const it of newItems) {
+              body += `- [${it.full_name}](${it.html_url}) — ⭐ ${it.stargazers_count}\n\n  ${it.description || '_no description_'}\n\n`;
+            }
+            body += `---\nThis alert was generated automatically by the scheduled search.`;
+
+            const title = `Game-algo alert (${sinceDate}): ${newItems.length} new repos`;
+
+            // Create issue
+            const issue = await github.rest.issues.create({
+              owner, repo,
+              title,
+              body,
+            });
+            core.info(`Created issue #${issue.data.number}`);
+
+            // Update state: append new reported IDs, cap size to most recent 2000 entries
+            const updatedIds = prevIds.concat(newItems.map(it => it.id)).slice(-2000);
+            const newContentJson = JSON.stringify({ reported: updatedIds, lastRun: new Date().toISOString() }, null, 2);
+            const encoded = Buffer.from(newContentJson).toString('base64');
+
+            // Create or update the file in the repo
+            const commitMsg = `chore: update state after alert (${new Date().toISOString().slice(0,10)})`;
+            if (prevSha) {
+              await github.rest.repos.createOrUpdateFileContents({
+                owner, repo, path: statePath, message: commitMsg,
+                content: encoded, sha: prevSha,
+              });
+              core.info('Updated existing state file.');
+            } else {
+              await github.rest.repos.createOrUpdateFileContents({
+                owner, repo, path: statePath, message: commitMsg,
+                content: encoded,
+              });
+              core.info('Created new state file.');
+            }
