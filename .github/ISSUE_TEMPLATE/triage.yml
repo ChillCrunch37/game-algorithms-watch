@@ -1,0 +1,26 @@
+---
+name: Triage checklist
+about: Use this when triaging discovery issues
+description: "Some times issues are big - don't abuse this!"
+title: "[Triage] {repo} — results"
+labels: ["triage-needed"]
+assignees: []
+---
+
+Triage result checklist (check and edit):
+
+- [ ] Repo is in-scope for game-algorithms-watch
+- [ ] Add appropriate topic:* labels (e.g., topic:pathfinding)
+- [ ] Add language:* label (e.g., language:python)
+- [ ] Set difficulty label (beginner-friendly / intermediate / advanced)
+- [ ] Move to module (add module-proposed or in-scope) or close as out-of-scope
+- [ ] Add short justification for the decision below
+
+Decision:
+- Status: in-scope / module-proposed / out-of-scope
+- Reviewer: @
+- Rationale:
+  - {reason}
+- Action taken:
+  - Labels added:
+  - Linked to module or issue:
