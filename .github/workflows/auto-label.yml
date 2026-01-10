@@ -1,0 +1,432 @@
+name: Auto-label new discovery issues
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Apply labels based on content
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const title = (issue.title || "").toLowerCase();
+            const body = (issue.body || "").toLowerCase();
+            const text = title + "\n" + body;
+
+            // language keywords & file extension heuristics
+            const languageMap = {
+              "language:python": ["python", ".py"],
+              "language:cpp": ["c++", ".cpp", ".cc", ".cxx",",hpp"],
+              "language:c": ["\\b.c\\b", ".h "],
+              "language:javascript": ["javascript", ".js", ".mjs", ".cjs"],
+              "language:typescript": ["typescript", ".ts"],
+              "language:csharp": ["c#", ".cs", "csharp"],
+              "language:godot": ["godot", ".gd"],
+              "language:lisp": ["lisp", "common lisp", ".lsp",".lisp"],
+              "language:go": ["golang", "go ", ".go"],
+              "language:lua": ["lua", ".lua"]
+            };
+            
+            const topicMap = {
+              "topic:pathfinding": [
+              "a\\*",
+              "astar",
+              "a-star",
+              "dijkstra",
+              "jump point search",
+              "jps",
+              "pathfinding",
+              "path finding",
+              "grid pathfinding",
+              "graph search",
+              "navmesh",
+              "navigation mesh",
+              "nav mesh",
+              "path planning",
+              "funnel algorithm",
+              "hierarchical pathfinding"
+              ],
+              
+              "topic:navigation-mesh": [
+              "navmesh",
+              "navigation mesh",
+              "nav mesh",
+              "navmesh generator",
+              "navmesh generation",
+              "navmesh build",
+              "navmesh path"
+              ],
+              
+              "topic:steering": [
+              "steer",
+              "steering",
+              "seek",
+              "flee",
+              "arrive",
+              "wander",
+              "pursuit",
+              "evade",
+              "obstacle avoidance",
+              "steering behavior"
+              ],
+              
+              "topic:flocking": [
+              "boid",
+              "boids",
+              "flock",
+              "flocking",
+              "separation",
+              "alignment",
+              "cohesion",
+              "crowd simulation",
+              "multi-agent simulation"
+              ],
+              
+              "topic:crowd-simulation": [
+              "crowd simulation",
+              "agent-based",
+              "density-based navigation",
+              "flow field",
+              "crowd ai"
+              ],
+              
+              "topic:collision-detection": [
+              "collision",
+              "collision detection",
+              "broadphase",
+              "narrowphase",
+              "collision response",
+              "hit test",
+              "collision resolution",
+              "swept aabb",
+              "continuous collision"
+              ],
+              
+              "topic:physics-simulation": [
+              "physics",
+              "physics engine",
+              "rigid body",
+              "rigid-body",
+              "verlet",
+              "verlet integration",
+              "constraint solver",
+              "impulse resolution",
+              "soft body",
+              "particle physics"
+              ],
+              
+              "topic:animation": [
+              "animation",
+              "skeletal animation",
+              "blend tree",
+              "animation blending",
+              "inverse kinematics",
+              "ik",
+              "forward kinematics",
+              "motion capture",
+              "retargeting"
+              ],
+              
+              "topic:inverse-kinematics": [
+              "inverse kinematics",
+              "\\bik\\b",
+              "ccd ik",
+              " fabrik ",
+              "forward/backward kinematics"
+              ],
+              
+              "topic:procedural-generation": [
+              "procedural",
+              "procedural generation",
+              "pcg",
+              "noise",
+              "perlin",
+              "simplex",
+              "diamond-square",
+              "cellular automata",
+              "l-system",
+              "dungeon generation",
+              "maze generation",
+              "level generation",
+              "world generation",
+              "terrain generation",
+              "tilemap generation"
+              ],
+              
+              "topic:terrain-generation": [
+              "terrain generation",
+              "heightmap",
+              "erosion",
+              "terrain meshing",
+              "voxel terrain",
+              "marching cubes"
+              ],
+              
+              "topic:dungeon-generation": [
+              "dungeon generation",
+              "roguelike generation",
+              "room-and-corridor",
+              "cellular automata dungeon",
+              "BSP dungeon"
+              ],
+              
+              "topic:ai-decision-making": [
+              "ai",
+              "artificial intelligence",
+              "decision making",
+              "perception",
+              "utility ai",
+              "behavior tree",
+              "finite state machine",
+              "fsm",
+              "goap",
+              "goal oriented action planning",
+              "planner",
+              "rule-based",
+              "mcts",
+              "monte carlo tree search",
+              "decision tree",
+              "hierarchical state"
+              ],
+              
+              "topic:behavior-tree": [
+              "behavior tree",
+              "btree",
+              "bt"
+              ],
+              
+              "topic:fsm": [
+              "finite state",
+              "finite state machine",
+              "fsm",
+              "state machine"
+              ],
+              
+              "topic:utility-ai": [
+              "utility ai",
+              "utility-system",
+              "score-based decision",
+              "desirability scoring"
+              ],
+              
+              "topic:planning": [
+              "planning",
+              "path planning",
+              "action planning",
+              "task planner",
+              "hierarchical task network",
+              "htn"
+              ],
+              
+              "topic:mcts": [
+              "mcts",
+              "monte carlo tree search",
+              "uct",
+              "rollout"
+              ],
+              
+              "topic:reinforcement-learning": [
+              "reinforcement learning",
+              "deep q",
+              "dqn",
+              "policy gradient",
+              "rl agent",
+              "actors-critic",
+              "ppo",
+              "a2c",
+              "q-learning",
+              "temporal difference"
+              ],
+              
+              "topic:spatial-data-structures": [
+              "quadtree",
+              "quad-tree",
+              "octree",
+              "oct-tree",
+              "kdtree",
+              "k-d tree",
+              "kd-tree",
+              "bvh",
+              "bounding volume hierarchy",
+              "grid partitioning",
+              "spatial hash",
+              "spatial partition",
+              "voxel octree"
+              ],
+              
+              "topic:visibility-culling": [
+              "frustum culling",
+              "occlusion culling",
+              "portal culling",
+              "pvs",
+              "potentially visible set",
+              "visibility culling"
+              ],
+              
+              "topic:level-of-detail": [
+              "lod",
+              "level of detail",
+              "mesh simplification",
+              "geomipmapping",
+              "impostors"
+              ],
+              
+              "topic:rendering-optimizations": [
+              "rendering optimization",
+              "draw call",
+              "instancing",
+              "visibility",
+              "gpu skinning",
+              "render culling",
+              "deferred rendering",
+              "forward rendering",
+              "shaders",
+              "g-buffer"
+              ],
+              
+              "topic:networking": [
+              "network",
+              "multiplayer",
+              "lockstep",
+              "rollback",
+              "deterministic lockstep",
+              "snapshot interpolation",
+              "client-side prediction",
+              "server authoritative",
+              "netcode",
+              "lag compensation",
+              "peer to peer",
+              "p2p"
+              ],
+              
+              "topic:audio-systems": [
+              "audio",
+              "sound",
+              "spatial audio",
+              "3d audio",
+              "audio synthesis",
+              "sfx",
+              "positional audio"
+              ],
+              
+              "topic:particles-effects": [
+              "particle",
+              "particle system",
+              "particle effects",
+              "emitters",
+              "gpu particles",
+              "particle simulation"
+              ],
+              
+              "topic:tools-and-editors": [
+              "editor",
+              "tooling",
+              "level editor",
+              "map editor",
+              "asset pipeline",
+              "importer",
+              "exporter",
+              "plugin",
+              "toolchain"
+              ],
+              
+              "topic:scripting-and-embedding": [
+              "scripting",
+              "lua",
+              "embedded script",
+              "script integration",
+              "vm scripting",
+              "python scripting"
+              ],
+              
+              "topic:performance": [
+              "perf",
+              "performance",
+              "profiling",
+              "optimisation",
+              "optimization",
+              "benchmarks",
+              "microbenchmark"
+              ],
+              
+              "topic:testing": [
+              "test",
+              "unit test",
+              "integration test",
+              "fuzzing",
+              "ci",
+              "continuous integration",
+              "regression test"
+              ],
+              
+              "topic:math-and-geometry": [
+              "vector",
+              "matrix",
+              "quaternion",
+              "geometry",
+              "linear algebra",
+              "distance field",
+              "signed distance",
+              "sdf",
+              "convex hull",
+              "voronoi",
+              "delaunay",
+              "triangulation"
+              ],
+              
+              "topic:ux-input": [
+              "input",
+              "controller",
+              "gamepad",
+              "touch",
+              "input handling",
+              "deadzone",
+              "input mapping"
+              ],
+              
+              "topic:particle-systems": [
+              "particle system",
+              "emitter",
+              "particle emitter",
+              "particle effects"
+              ]
+              };
+            const labelsToAdd = new Set();
+
+            for (const [label, patterns] of Object.entries(languageMap)) {
+              for (const p of patterns) {
+                const re = new RegExp(p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+                if (re.test(text)) { labelsToAdd.add(label); break; }
+              }
+            }
+
+            for (const [label, patterns] of Object.entries(topicMap)) {
+              for (const p of patterns) {
+                const re = new RegExp(p, 'i');
+                if (re.test(text)) { labelsToAdd.add(label); break; }
+              }
+            }
+
+            // If it's created by the watcher/bot and lacks triage label, add triage-needed
+            if (title.includes("[discovery]") || text.includes("discovery")) {
+              labelsToAdd.add("discovery");
+              labelsToAdd.add("triage-needed");
+            }
+
+            if (labelsToAdd.size === 0) {
+              labelsToAdd.add("needs-module-link");
+            }
+
+            const labels = Array.from(labelsToAdd);
+            await github.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              labels
+            });
