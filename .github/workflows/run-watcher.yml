@@ -21,8 +21,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install requests
-      - name: Run watcher
+      - name: Run watcher from folder
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          python tools/watcher/watcher_g.py
+        working-directory: .github/tools/watcher
+        run: python watcher_g.py
+
