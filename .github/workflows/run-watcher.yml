@@ -2,7 +2,7 @@
 name: Run watcher (daily)
 on:
   schedule:
-    - cron: '0 3 * * *' # daily at 09:00 UTC; edit as needed
+    - cron: '0 11 * * *' # daily at 09:00 UTC; edit as needed
   workflow_dispatch: {} # allow manual runs
 
 jobs:
