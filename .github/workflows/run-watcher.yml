@@ -25,5 +25,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         working-directory: .github/tools/watcher
-        run: python watcher_g.py
+        run: python watcher-g.py
 
