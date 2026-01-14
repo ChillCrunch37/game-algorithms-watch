@@ -1,5 +1,6 @@
-# game-algorithms-watch
-Daily GitHub search alerts for game-algorithms — creates issues for new/high-quality repos so you get GitHub notifications.
+“Debugging is twice as hard as writing the code in the first place. Therefore, if you write the code as cleverly as possible, you are, by definition, not smart enough to debug it” [Kernighan].
+
+An algorithm is a sequence of discrete actions that when followed, will result in achieving some goal or solving some problem. In the field of computer science, an algorithm is any well-defined sequence of actions that takes a set of values as input and produces some set of values as output. In other words, an algorithm is a sequence of computational actions that transform the input into the desired output.
 
 # game-algorithms-watch
 
@@ -14,6 +15,7 @@ Expanded mission (2–3 sentences)
 Table of contents
 - What this repo does
 - Mission & goals
+- Pseudocode Expectations 
 - How alerts / issues work
 - Learning roadmap (topics & suggested projects)
 - How to contribute
@@ -83,6 +85,7 @@ Labels & templates (admin suggestions)
   - Discovery submission template (URL, summary, tags)
   - Module proposal template (learning goals, required knowledge, sample project)
 - Add a CONTRIBUTING.md and CODE_OF_CONDUCT.md
+- Pseudocode Template and guidelines
 
 Sample "learning module" README pattern (brief)
 - Goal: what learners will know/do
