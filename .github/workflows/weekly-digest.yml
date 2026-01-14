@@ -1,0 +1,74 @@
+name: Weekly digest -> GitHub Pages (docs/)
+on:
+  schedule:
+    - cron: '0 10 * * 1' # weekly on Monday at 10:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: python -m pip install --upgrade pip
+
+      - name: Render weekly digest (docs/digest.md)
+        run: |
+          python - <<'PY'
+          import json, pathlib, datetime
+          idx_path = pathlib.Path("discoveries/index.json")
+          docs_dir = pathlib.Path("docs")
+          docs_dir.mkdir(exist_ok=True)
+          out = docs_dir / "digest.md"
+          if not idx_path.exists():
+              print("No discoveries/index.json found, creating placeholder")
+              out.write_text("# Weekly Digest\n\n_No discoveries yet._\n")
+          else:
+              data = json.loads(idx_path.read_text())
+              now = datetime.datetime.utcnow().strftime("%Y-%m-%d")
+              lines = [f"# Weekly Digest — {now}\n"]
+              lines.append("This digest summarizes recent discoveries curated by the watcher.\n")
+              # Top 10 by stars
+              top = sorted(data, key=lambda x: -x.get("stars",0))[:10]
+              if top:
+                  lines.append("## Top discoveries\n")
+                  for entry in top:
+                      lines.append(f"- [{entry['full_name']}]({entry['html_url']}) — ⭐ {entry.get('stars',0)} — {entry.get('description') or ''}")
+                      # show any sponsor / maintainer notes
+                      sp = entry.get('has_sponsors_page')
+                      if sp:
+                          lines.append(f"  - Sponsors page: yes")
+                      # show top contributors
+                      contribs = entry.get('top_contributors') or []
+                      if contribs:
+                          c_line = ", ".join([f\"{c['login']} (last: {c.get('last_commit')})\" for c in contribs])
+                          lines.append(f"  - Top contributors: {c_line}")
+                  lines.append("\n")
+              else:
+                  lines.append("_No discoveries found this week._\n")
+              lines.append("## Notes\n- Items can be triaged by labels in the Issues.\n- This page is generated automatically from discoveries/index.json.\n")
+              out.write_text("\n".join(lines))
+          print('Wrote', out)
+        shell: bash
+
+      - name: Commit and push docs changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/digest.md
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Weekly digest: update docs/digest.md"
+            git push origin HEAD:main
+          fi
